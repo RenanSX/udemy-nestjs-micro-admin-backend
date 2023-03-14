@@ -1,20 +1,17 @@
-import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { Transport } from '@nestjs/microservices';
 import { AppModule } from './app.module';
-
-const logger = new Logger('Main');
+import { Transport } from '@nestjs/microservices';
 
 async function bootstrap() {
   const app = await NestFactory.createMicroservice(AppModule, {
     transport: Transport.RMQ,
     options: {
-      urls: ['amqp://admin:password@0.0.0.0:5672/smartranking'],
+      urls: ['amqp://user:q7W2UQk249gR@18.210.17.173:5672/smartranking'],
       noAck: false,
       queue: 'admin-backend',
     },
   });
+
   await app.listen();
-  logger.log('Microservice is listening!!');
 }
 bootstrap();
