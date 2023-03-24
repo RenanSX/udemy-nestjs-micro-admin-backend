@@ -1,10 +1,14 @@
 import { Module } from '@nestjs/common';
+import { JogadoresService } from './jogadores.service';
 import { JogadoresController } from './jogadores.controller';
-import { ProxyRMQModule } from '../proxyrmq/proxyrmq.module'
-import { AwsModule } from '../aws/aws.module'
+import { MongooseModule } from '@nestjs/mongoose'
+import { JogadorSchema } from './interfaces/jogador.schema';
 
 @Module({
-  imports: [ProxyRMQModule, AwsModule],  
+  imports: [MongooseModule.forFeature([
+    { name: 'Jogador', schema: JogadorSchema }
+  ])],
+  providers: [JogadoresService],
   controllers: [JogadoresController]
 })
 export class JogadoresModule {}

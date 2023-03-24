@@ -1,56 +1,79 @@
-import { Controller, Get, Logger, Post, UsePipes, ValidationPipe, Body, Query, Put, Param } from '@nestjs/common';
-import { CriarCategoriaDto } from './dtos/criar-categoria.dto';
-import { AtualizarCategoriaDto } from './dtos/atualizar-categoria.dto'
-import { Observable } from 'rxjs';
-import { ClientProxySmartRanking } from '../proxyrmq/client-proxy'
+import { Controller, Logger } from '@nestjs/common';
+import { CategoriasService } from './categorias.service';
+import { Payload, EventPattern, MessagePattern, Ctx, RmqContext } from '@nestjs/microservices';
+import { Categoria } from './interfaces/categoria.interface';
 
-@Controller('api/v1/categorias')
+const ackErrors: string[] = ['E11000']
+
+@Controller()
 export class CategoriasController {
+  constructor(private readonly categoriasService: CategoriasService) {}
 
-  private logger = new Logger(CategoriasController.name)
+  logger = new Logger(CategoriasController.name)
 
-  constructor(
-    private clientProxySmartRanking: ClientProxySmartRanking
-  ) {}
+  @EventPattern('criar-categoria')
+  async criarCategoria(
+    @Payload() categoria: Categoria, @Ctx() context: RmqContext) {
 
-  /*
-  private clientAdminBackend: ClientProxy
-  constructor() {
-    this.clientAdminBackend = ClientProxyFactory.create({
-      transport: Transport.RMQ,
-      options: {
-        urls: ['amqp://user:q7W2UQk249gR@18.210.17.173:5672/smartranking'],
-        queue: 'admin-backend'
+        const channel = context.getChannelRef()
+        const originalMsg = context.getMessage()
+
+        this.logger.log(`data: ${JSON.stringify(categoria)}`)
+
+        try {
+
+          await this.categoriasService.criarCategoria(categoria)
+          await channel.ack(originalMsg)
+        } catch(error) {
+          this.logger.error(`error: ${JSON.stringify(error.message)}`)
+
+          const filterAckError = ackErrors.filter(
+            ackError => error.message.includes(ackError))
+
+          if (filterAckError.length > 0) {
+            await channel.ack(originalMsg)
+          }
+
+        }
+
+  }
+
+  @MessagePattern('consultar-categorias')
+  async consultarCategorias(@Payload() _id: string, @Ctx() context: RmqContext) {
+      const channel = context.getChannelRef()
+      const originalMsg = context.getMessage()
+      try {
+        if (_id) {
+          return await this.categoriasService.consultarCategoriaPeloId(_id)
+        } else {
+          return await this.categoriasService.consultarTodasCategorias()
+        }
+      } finally {
+        await channel.ack(originalMsg)
+    }      
+  }
+  
+  @EventPattern('atualizar-categoria')
+  async atualizarCategoria(@Payload() data: any, @Ctx() context: RmqContext) {
+      const channel = context.getChannelRef()
+      const originalMsg = context.getMessage()
+      this.logger.log(`data: ${JSON.stringify(data)}`)
+      try {
+        const _id: string = data.id
+        const categoria: Categoria = data.categoria
+        await this.categoriasService.atualizarCategoria(_id, categoria)
+        await channel.ack(originalMsg)
+      } catch(error) {
+
+        const filterAckError = ackErrors.filter(
+          ackError => error.message.includes(ackError))
+
+        if (filterAckError.length > 0) {
+          await channel.ack(originalMsg)
+        }
+
       }
-    })
-  }
-  */
-
-  private clientAdminBackend = 
-              this.clientProxySmartRanking.getClientProxyAdminBackendInstance()
-
-  @Post()
-  @UsePipes(ValidationPipe)
-  criarCategoria(
-    @Body() criarCategoriaDto: CriarCategoriaDto){
-
-      this.clientAdminBackend.emit('criar-categoria', criarCategoriaDto)
-
-  }
-
-  @Get()
-  consultarCategorias(@Query('idCategoria') _id: string): Observable<any> {
-
-    return this.clientAdminBackend.send('consultar-categorias', _id ? _id : '')
-
-  }
-
-  @Put('/:_id')
-  @UsePipes(ValidationPipe)    
-  atualizarCategoria(@Body() atualizarCategoriaDto: AtualizarCategoriaDto,
-         @Param('_id') _id: string) {
-          this.clientAdminBackend.emit('atualizar-categoria', 
-          { id: _id, categoria: atualizarCategoriaDto }) 
-         }    
+  
+  }   
 
 }
