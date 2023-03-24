@@ -1,23 +1,19 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
 import { CategoriasModule } from './categorias/categorias.module';
 import { JogadoresModule } from './jogadores/jogadores.module';
+import { ClientProxySmartRanking } from './proxyrmq/client-proxy'
+import { ProxyRMQModule } from './proxyrmq/proxyrmq.module';
+import { AwsModule } from './aws/aws.module';
+import { ConfigModule } from '@nestjs/config'
 
 @Module({
-  imports: [
-    MongooseModule.forRoot(
-      'mongodb+srv://admin_sr:kdWcpu1jWvUSlU6Y@clustermogodb-79l5n.mongodb.net/sradmbackend?retryWrites=true&w=majority',
-      {
-        useNewUrlParser: true,
-        useCreateIndex: true,
-        useUnifiedTopology: true,
-        useFindAndModify: false.valueOf,
-      },
-    ),
-    CategoriasModule,
-    JogadoresModule,
+  imports: [CategoriasModule, 
+    JogadoresModule, 
+    ProxyRMQModule, 
+    AwsModule,
+    ConfigModule.forRoot({isGlobal: true})
   ],
   controllers: [],
-  providers: [],
+  providers: [ClientProxySmartRanking],
 })
 export class AppModule {}
