@@ -17,7 +17,7 @@ export class CategoriasService {
 
     try {
       const categoriaCriada = new this.categoriaModel(categoria)
-      await categoriaCriada.save() //removido o return
+      await categoriaCriada.save() 
   } catch (error) {
     this.logger.error(`error: ${JSON.stringify(error.message)}`)
     throw new RpcException(error.message)

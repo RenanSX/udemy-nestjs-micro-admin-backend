@@ -18,8 +18,6 @@ export class CategoriasController {
         const channel = context.getChannelRef()
         const originalMsg = context.getMessage()
 
-        this.logger.log(`data: ${JSON.stringify(categoria)}`)
-
         try {
 
           await this.categoriasService.criarCategoria(categoria)
